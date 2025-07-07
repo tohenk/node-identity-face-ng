@@ -1,0 +1,32 @@
+{
+  "name": "@ntlab/identity-face-ng",
+  "version": "1.0.0",
+  "description": "Face identity acquisition and identification using Face Landmarks Detection",
+  "main": "index.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tohenk/node-identity-face-ng.git"
+  },
+  "keywords": [
+    "face",
+    "identify",
+    "acquisition",
+    "identification"
+  ],
+  "author": "Toha <tohenk@yahoo.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tohenk/node-identity-face-ng/issues"
+  },
+  "homepage": "https://github.com/tohenk/node-identity-face-ng#readme",
+  "dependencies": {
+    "@ntlab/identity": "^1.2.2",
+    "@tensorflow-models/face-landmarks-detection": "^1.0.6",
+    "@tensorflow/tfjs-node": "^4.22.0",
+    "debug": "^4.4.1",
+    "gunzip-maybe": "^1.4.2",
+    "sharp": "^0.34.2",
+    "tar-stream": "^3.1.7"
+  }
+}
