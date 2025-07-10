@@ -74,13 +74,14 @@ class FaceDetection {
     }
 
     /**
-     * Detect face landmarks.
+     * Detect faces landmarks.
      *
      * @param {string|Buffer} input Face image data
-     * @returns {Promise<Array>}
+     * @returns {Promise<object>}
      */
-    async getFace(input) {
-        let res, backend;
+    async getFaces(input) {
+        const res = {};
+        let backend;
         if (this.detector === undefined) {
             this.detector = await this.getDetector();
         }
@@ -97,7 +98,7 @@ class FaceDetection {
                 this.detector.reset();
                 const faces = await this.detector.estimateFaces(img, {flipHorizontal: false});
                 if (faces.length) {
-                    res = faces[0];
+                    res.faces = faces;
                     res.shape = img.shape;
                 }
             }
@@ -218,7 +219,7 @@ class FaceFeatures {
         return res;
     }
 
-    find(featuresList, confidence = 0.075) {
+    find(featuresList, confidence = 0.05) {
         let index, conf;
         for (const [idx, features] of Object.entries(featuresList)) {
             const dist = this.distance(features);

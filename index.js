@@ -26,9 +26,9 @@ const path = require('path');
 const { Identity } = require('@ntlab/identity');
 const { FaceDetection, FaceLandmark } = require('./face');
 const sharp = require('sharp');
-const debug = require('debug')('identity:face-api');
+const debug = require('debug')('identity:face-ng');
 
-class FaceApiId extends Identity {
+class FaceId extends Identity {
 
     VERSION = 'FACEIDENTITY-1.0'
 
@@ -39,8 +39,7 @@ class FaceApiId extends Identity {
         this.channelType = 'cluster';
         this.workerOptions = {
             worker: path.join(__dirname, 'worker'),
-            maxWorker: 4,
-            maxWorks: 50,
+            maxWorks: 1000,
             hasConfidence: true,
         }
     }
@@ -56,7 +55,7 @@ class FaceApiId extends Identity {
                     return await this.faceIdentify(this.normalize(data.feature), data.workid);
                 },
                 'detect': async (data) => {
-                    return {face: await this.detectFaces(this.normalize(data.feature))};
+                    return await this.detectFaces(this.normalize(data.feature));
                 },
                 'count-template': data => {
                     return {count: this.getIdentifier().count()};
@@ -109,47 +108,67 @@ class FaceApiId extends Identity {
         return data;
     }
 
-    async getFace(img) {
+    async getFaces(img) {
         if (this.detector === undefined) {
             this.detector = new FaceDetection();
         }
-        const landmark = await this.detector.getFace(img);
-        if (landmark) {
-            return new FaceLandmark(landmark);
+        const detection = await this.detector.getFaces(img);
+        if (detection.faces) {
+            return detection.faces
+                .map(landmark => new FaceLandmark({shape: detection.shape, ...landmark}));
         }
     }
 
     async getFaceFeatures(img) {
-        const face = await this.getFace(img);
-        if (face) {
-            return face.getFeatures();
+        const faces = await this.getFaces(img);
+        if (Array.isArray(faces) && faces.length) {
+            return faces.
+                map(face => face.getFeatures());
         }
     }
 
-    async detectFaces(img) {
-        const face = await this.getFace(img);
-        if (face) {
-            const box = {};
-            for (const k of [['left', 'xMin'], ['top', 'yMin'], 'width', 'height']) {
-                if (Array.isArray(k)) {
-                    box[k[0]] = parseInt(face.box[k[1]]);
-                } else {
-                    box[k] = parseInt(face.box[k]);
-                }
-            }
-            let res = sharp(img);
-            // only crop when detected box is smalled then the image
-            if ((box.left + box.width) < face.shape[1] && (box.top + box.height) < face.shape[0]) {
-                res = res.extract(box);
-            }
-            return await res.toBuffer();
+    async detectFaces(img, options = null) {
+        options = options || {};
+        if (options.face === undefined) {
+            options.face = true;
         }
+        if (options.feature === undefined) {
+            options.feature = true;
+        }
+        const res = [];
+        const faces = await this.getFaces(img);
+        if (Array.isArray(faces) && faces.length) {
+            for (const face of faces) {
+                const data = {};
+                if (options.face) {
+                    const box = {};
+                    for (const k of [['left', 'xMin'], ['top', 'yMin'], 'width', 'height']) {
+                        if (Array.isArray(k)) {
+                            box[k[0]] = parseInt(face.box[k[1]]);
+                        } else {
+                            box[k] = parseInt(face.box[k]);
+                        }
+                    }
+                    let faceimg = sharp(img);
+                    // only crop when detected box is smaller then the image
+                    if ((box.left + box.width) < face.shape[1] && (box.top + box.height) < face.shape[0]) {
+                        faceimg = faceimg.extract(box);
+                    }
+                    data.face = await faceimg.toBuffer();
+                }
+                if (options.feature) {
+                    data.features = face.getFeatures();
+                }
+                res.push(data);
+            }
+        }
+        return res;
     }
 
     async faceIdentify(feature, workid) {
-        const feat = await this.getFaceFeatures(feature);
-        if (feat) {
-            return this.getIdentifier().identify(this.fixWorkId(workid), feat);
+        const features = await this.getFaceFeatures(feature);
+        if (Array.isArray(features)) {
+            return this.getIdentifier().identify(this.fixWorkId(workid), features[0]);
         }
     }
 
@@ -165,4 +184,4 @@ class FaceApiId extends Identity {
     }
 }
 
-module.exports = FaceApiId;
+module.exports = FaceId;

@@ -24,12 +24,16 @@
 
 const { Worker } = require('@ntlab/identity');
 const { FaceDetection, FaceLandmark, FaceFeatures } = require('./face');
-const debug = require('debug')('identity:worker:face-api');
+const debug = require('debug')('identity:worker:face-ng');
 
-let detector, stopped = false;
+/**
+ * @type {FaceDetection}
+ */
+let detector;
+let stopped = false;
 
 async function verify(work, start, end) {
-    log('FACEAPI> [%d] Verifying %s from %d to %d', Worker.id, work.id, start, end);
+    log('FACE> [%d] Verifying %s from %d to %d', Worker.id, work.id, start, end);
     const features = [];
     const indices = [];
     let count = 0;
@@ -37,14 +41,14 @@ async function verify(work, start, end) {
     let current = start;
     try {
         // prepare trained data
-        log('FACEAPI> [%d] Preparing data...', Worker.id);
+        log('FACE> [%d] Preparing data...', Worker.id);
         while (current <= end) {
             if (stopped) {
                 break;
             }
-            const feat = await getFaceFeatures(work.items, current);
-            if (feat) {
-                features.push(feat);
+            const feature = await getFaceFeatures(work.items, current);
+            if (feature) {
+                features.push(feature);
                 indices.push(current);
                 count++;
             }
@@ -52,7 +56,7 @@ async function verify(work, start, end) {
         }
         if (!stopped && features.length) {
             // find best matches
-            log('FACEAPI> [%d] Find match...', Worker.id);
+            log('FACE> [%d] Find match...', Worker.id);
             const feature = FaceFeatures.from(work.feature);
             const [match, confidence] = feature.find(features);
             if (match !== undefined) {
@@ -60,21 +64,22 @@ async function verify(work, start, end) {
             }
         }
         // done
-        log('FACEAPI> [%d] Done verifying %d sample(s)', Worker.id, count);
+        log('FACE> [%d] Done verifying %d sample(s)', Worker.id, count);
     }
     catch (err) {
-        error('FACEAPI> [%d] Err: %s', Worker.id, err);
+        error('FACE> [%d] Err: %s', Worker.id, err);
     }
     Worker.send({cmd: 'done', work: work, matched: matched, worker: Worker.id});
 }
 
-async function getFace(img) {
+async function getFaces(img) {
     if (detector === undefined) {
         detector = new FaceDetection();
     }
-    const landmark = await detector.getFace(img);
-    if (landmark) {
-        return new FaceLandmark(landmark);
+    const detection = await detector.getFaces(img);
+    if (detection.faces) {
+        return detection.faces
+            .map(landmark => new FaceLandmark({shape: detection.shape, ...landmark}));
     }
 }
 
@@ -84,9 +89,9 @@ async function getFaceFeatures(items, index) {
     if (data) {
         if (data.type === 'Buffer' && data.data) {
             const buff = Buffer.from(data.data);
-            const face = await getFace(buff);
-            if (face) {
-                res = face.getFeatures();
+            const faces = await getFaces(buff);
+            if (Array.isArray(faces) && faces.length) {
+                res = faces[0].getFeatures();
                 items[index] = res;
             } else {
                 items[index] = null;
@@ -115,7 +120,7 @@ Worker.on('message', async (data) => {
             break;
         case 'stop':
             stopped = true;
-            log('FACEAPI> [%d] Stopping', Worker.id);
+            log('FACE> [%d] Stopping', Worker.id);
             break;
     }
 });
