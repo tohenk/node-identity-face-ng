@@ -140,14 +140,16 @@ class FaceLandmark {
             this.shape = shape;
         }
         this.box = box;
+        const size = Math.max(this.box.width, this.box.height);
+        const scale = this.scale / size;
         this.points = Points.from(keypoints);
         this.points.normalize({
-            xMin: this.box.xMin,
-            yMin: this.box.yMin,
+            xMin: this.box.xMin + (size - this.box.width) / 2,
+            yMin: this.box.yMin + (size - this.box.height) / 2,
             zMin: this.points.getMin('z'),
-            xScale: this.scale / this.box.width,
-            yScale: this.scale / this.box.height,
-            zScale: this.scale / Math.abs(this.points.getMax('z') - this.points.getMin('z')),
+            xScale: scale,
+            yScale: scale,
+            zScale: scale,
         });
         for (const key of Object.keys(this.markers)) {
             const points = this.points.getNamed(key);
@@ -205,30 +207,35 @@ class FaceFeatures {
             if (Object.keys(this).length !== Object.keys(features).length) {
                 throw new Error('Unable to compare between different face features!');
             }
-            const values = {};
-            for (const feature of Object.keys(this)) {
-                const pairs = this[feature]
-                    .map((v, k) => Point.from({x: v, y: features[feature][k]}));
-                values[feature] = Math.sqrt(pairs
-                    .map(p => p.x - p.y)
-                    .reduce((a, b) => a + (b * b), 0));
-            }
-            res = Object.values(values)
-                .reduce((a, b) => a + b, 0) / Object.values(values).length;
+            const feat1 = this.constructor.flatten(this);
+            const feat2 = this.constructor.flatten(features);
+            const pairs = feat1
+                .map((v, k) => Point.from({x: v, y: feat2[k]}));
+            res = Math.sqrt(pairs
+                .map(p => p.x - p.y)
+                .reduce((a, b) => a + (b * b), 0));
         }
         return res;
     }
 
-    find(featuresList, confidence = 0.05) {
+    find(featuresList, threshold = 0.15) {
         let index, conf;
         for (const [idx, features] of Object.entries(featuresList)) {
             const dist = this.distance(features);
-            if (dist <= confidence && (conf === undefined || dist < conf)) {
+            if (dist < threshold && (conf === undefined || dist < conf)) {
                 conf = dist;
                 index = idx;
             }
         }
         return [index, conf];
+    }
+
+    static flatten(features) {
+        const res = [];
+        Object.values(features).forEach(v => {
+            res.push(...v);
+        });
+        return res;
     }
 
     static from(data) {

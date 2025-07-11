@@ -39,7 +39,7 @@ class FaceId extends Identity {
         this.channelType = 'cluster';
         this.workerOptions = {
             worker: path.join(__dirname, 'worker'),
-            maxWorks: 1000,
+            maxWorks: 0,
             hasConfidence: true,
         }
     }
@@ -149,10 +149,14 @@ class FaceId extends Identity {
                             box[k] = parseInt(face.box[k]);
                         }
                     }
-                    let faceimg = sharp(img);
+                    const faceimg = sharp(img);
                     // only crop when detected box is smaller then the image
                     if ((box.left + box.width) < face.shape[1] && (box.top + box.height) < face.shape[0]) {
-                        faceimg = faceimg.extract(box);
+                        faceimg.extract(box);
+                        if (this.options.size) {
+                            const scale = this.options.size / Math.max(box.width, box.height);
+                            faceimg.resize(Math.ceil(box.width * scale), Math.ceil(box.height * scale));
+                        }
                     }
                     data.face = await faceimg.toBuffer();
                 }
