@@ -55,7 +55,7 @@ class FaceId extends Identity {
                     return await this.faceIdentify(this.normalize(data.feature), data.workid);
                 },
                 'detect': async (data) => {
-                    return await this.detectFaces(this.normalize(data.feature));
+                    return await this.detectFaces(this.normalize(data.feature), data.options);
                 },
                 'count-template': data => {
                     return {count: this.getIdentifier().count()};
