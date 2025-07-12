@@ -144,8 +144,8 @@ class FaceLandmark {
         const scale = this.scale / size;
         this.points = Points.from(keypoints);
         this.points.normalize({
-            xMin: this.box.xMin + (size - this.box.width) / 2,
-            yMin: this.box.yMin + (size - this.box.height) / 2,
+            xMin: this.box.xMin,
+            yMin: this.box.yMin,
             zMin: this.points.getMin('z'),
             xScale: scale,
             yScale: scale,

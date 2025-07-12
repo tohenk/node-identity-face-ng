@@ -34,7 +34,7 @@ class FaceId extends Identity {
 
     init() {
         super.init();
-        this.id = 'FACEAPI';
+        this.id = 'FACE';
         this.proxyServerId = 'FACEIDENTITY';
         this.channelType = 'cluster';
         this.workerOptions = {
