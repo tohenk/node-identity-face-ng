@@ -169,7 +169,7 @@ class TfjsLocalModel {
                             if (this.models[model] === undefined) {
                                 this.models[model] = {};
                             }
-                            this.models[model][path.join(f.parentPath, f.name)] = parseInt(vers[1]);
+                            this.models[model][path.join(this._modeldir, f.name)] = parseInt(vers[1]);
                             if (Object.keys(this.models[model]).length > 1) {
                                 this.models[model].sort((a, b) => a - b);
                             }
