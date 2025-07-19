@@ -172,7 +172,7 @@ class FaceId extends Identity {
     async faceIdentify(feature, workid) {
         const features = await this.getFaceFeatures(feature);
         if (Array.isArray(features)) {
-            return this.getIdentifier().identify(this.fixWorkId(workid), features[0]);
+            return await this.getIdentifier().identify(this.fixWorkId(workid), features[0]);
         }
     }
 

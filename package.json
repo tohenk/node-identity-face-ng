@@ -1,6 +1,6 @@
 {
   "name": "@ntlab/identity-face-ng",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "Face identity acquisition and identification using Face Landmarks Detection",
   "main": "index.js",
   "scripts": {},
