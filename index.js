@@ -144,9 +144,9 @@ class FaceId extends Identity {
                     const box = {};
                     for (const k of [['left', 'xMin'], ['top', 'yMin'], 'width', 'height']) {
                         if (Array.isArray(k)) {
-                            box[k[0]] = parseInt(face.box[k[1]]);
+                            box[k[0]] = Math.max(0, parseInt(face.box[k[1]]));
                         } else {
-                            box[k] = parseInt(face.box[k]);
+                            box[k] = Math.max(0, parseInt(face.box[k]));
                         }
                     }
                     const faceimg = sharp(img);
